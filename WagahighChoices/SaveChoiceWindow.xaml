@@ -1,0 +1,39 @@
+﻿<Window x:Class="WagahighChoices.SaveChoiceWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WagahighChoices"
+        mc:Ignorable="d"
+        Title="SaveChoiceWindow" Height="300" Width="300">
+    <Grid Margin="6">
+        <Grid.RowDefinitions>
+            <RowDefinition />
+            <RowDefinition Height="6" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="6" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="6" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Image Grid.Row="0" Source="{Binding Image}" />
+
+        <TextBlock Grid.Row="2" Text="選択肢1:" />
+        <TextBox Grid.Row="3" Text="{Binding Choice1}" />
+
+        <TextBlock Grid.Row="5" Text="選択肢2:"/>
+        <TextBox Grid.Row="6" Text="{Binding Choice2}" />
+
+        <Grid Grid.Row="8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition />
+                <ColumnDefinition Width="100" />
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1" Content="OK" IsDefault="True" Click="Button_Click" />
+        </Grid>
+    </Grid>
+</Window>
