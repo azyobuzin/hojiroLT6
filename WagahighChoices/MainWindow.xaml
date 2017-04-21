@@ -11,12 +11,14 @@
             <RowDefinition />
             <RowDefinition />
             <RowDefinition />
+            <RowDefinition />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <Button Name="btnSaveAsChoice" Grid.Row="0" Content="選択肢として記録" Click="btnSaveAsChoice_Click" />
-        <Button Name="btnSaveAsRoute" Grid.Row="1" Content="個別ルートの選択肢として記録" />
-        <Button Name="btnStart" Grid.Row="2" Content="探索を開始" />
-        <TextBlock Name="lblStatus" Grid.Row="3" Loaded="lblStatus_Loaded" Padding="6" />
+        <Button Name="btnSaveAsRoute" Grid.Row="1" Content="個別ルートの選択肢として記録" Click="btnSaveAsRoute_Click" />
+        <Button Name="btnStart" Grid.Row="2" Content="探索を開始" Click="btnStart_Click" />
+        <Button Name="btnDeleteDatabase" Grid.Row="3" Content="記録したデータを削除" Click="btnDeleteDatabase_Click" />
+        <TextBlock Name="lblStatus" Grid.Row="4" Loaded="lblStatus_Loaded" Padding="6" />
     </Grid>
 </Window>
