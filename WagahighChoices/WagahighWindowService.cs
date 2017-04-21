@@ -114,14 +114,14 @@ namespace WagahighChoices
         public bool CursorMoveOut()
         {
             var cursorPos = this.GetCursorPosition();
-            var clientPos = this.GetClientPosition();
             var clientSize = this.GetClientSize();
 
-            if (cursorPos.X >= clientPos.X && cursorPos.X < clientPos.X + clientSize.Width
-                && cursorPos.Y >= clientPos.Y && cursorPos.Y < clientPos.Y + clientSize.Height)
+            if (cursorPos.X >= 0 && cursorPos.X < clientSize.Width
+                && cursorPos.Y >= 0 && cursorPos.Y < clientSize.Height)
             {
                 // とりあえず 0,0 に移動（雑）
-                this.SetCursorPosition(new Point());
+                if (!User32Methods.SetCursorPos(0, 0))
+                    ThrowWin32Exception();
                 return true;
             }
 

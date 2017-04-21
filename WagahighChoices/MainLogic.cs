@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -52,7 +53,7 @@ namespace WagahighChoices
 
             this._windowService.ActivateWindow();
             this._windowService.CursorMoveOut();
-            Thread.Sleep(100);
+            Thread.Sleep(200);
 
             return this._windowService.Capture();
         }
@@ -114,7 +115,7 @@ namespace WagahighChoices
         {
             using (var realm = Realm.GetInstance(s_realmConfig))
             {
-                realm.Write(() => realm.Add(new ChoiceWindowInfo()
+                realm.Write(() => realm.Add(new ChoiceWindowInfoRealmObject()
                 {
                     ScreenshotHash = screenshotHash,
                     Choice1 = choice1 ?? "選択肢1",
@@ -127,7 +128,7 @@ namespace WagahighChoices
         {
             using (var realm = Realm.GetInstance(s_realmConfig))
             {
-                realm.Write(() => realm.Add(new ChoiceWindowInfo()
+                realm.Write(() => realm.Add(new ChoiceWindowInfoRealmObject()
                 {
                     ScreenshotHash = screenshotHash,
                     RouteName = routeName ?? screenshotHash
@@ -138,13 +139,32 @@ namespace WagahighChoices
         public static ChoiceWindowInfo GetChoiceWindowInfo(string screenshotHash)
         {
             using (var realm = Realm.GetInstance(s_realmConfig))
-                return realm.Find<ChoiceWindowInfo>(screenshotHash);
+            {
+                var ro = realm.Find<ChoiceWindowInfoRealmObject>(screenshotHash);
+                return ro == null ? null
+                    : new ChoiceWindowInfo
+                    {
+                        ScreenshotHash = ro.ScreenshotHash,
+                        Choice1 = ro.Choice1,
+                        Choice2 = ro.Choice2,
+                        RouteName = ro.RouteName
+                    };
+            }
         }
 
         public static ChoiceWindowInfo[] GetAllChoiceWindowInfo()
         {
             using (var realm = Realm.GetInstance(s_realmConfig))
-                return realm.All<ChoiceWindowInfo>().ToArray();
+                return realm.All<ChoiceWindowInfoRealmObject>()
+                    .AsEnumerable()
+                    .Select(ro => new ChoiceWindowInfo
+                    {
+                        ScreenshotHash = ro.ScreenshotHash,
+                        Choice1 = ro.Choice1,
+                        Choice2 = ro.Choice2,
+                        RouteName = ro.RouteName
+                    })
+                    .ToArray();
         }
 
         public IObservable<string /* ScreenshotHash */> TraceChoices(CancellationToken cancellationToken)
@@ -167,13 +187,20 @@ namespace WagahighChoices
 
             try
             {
-                this.QuickSave();
-
-                using (var writer = new StreamWriter(DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json"))
+                using (var writer = new JsonTextWriter(new StreamWriter(DateTime.Now.ToString("yyyyMMdd-HHmmss") + ".json")))
                 {
-                    writer.Write('[');
+                    writer.Formatting = Formatting.Indented;
 
-                    var isFirst = true;
+                    // JSON ヘッダー書き込み
+                    writer.WriteStartObject();
+                    writer.WritePropertyName("ChoiceWindowInfo");
+                    s_serializer.Serialize(writer, GetAllChoiceWindowInfo());
+                    writer.WritePropertyName("FoundRoutes");
+                    writer.WriteStartArray();
+                    writer.Flush();
+
+                    this.QuickSave();
+
                     var choiceTracer = new ChoiceTracer();
 
                     while (true)
@@ -187,8 +214,8 @@ namespace WagahighChoices
                         {
                             subject.OnNext(foundRoute.Value.RouteScreenshotHash);
 
-                            if (!isFirst) writer.Write(',');
                             s_serializer.Serialize(writer, foundRoute.Value);
+                            writer.Flush();
                         }
 
                         if (actions == null || actions.Count == 0)
@@ -219,11 +246,15 @@ namespace WagahighChoices
                         }
                     }
 
-                    writer.Write(']');
+                    writer.WriteEndArray();
+                    writer.WriteEndObject();
                 }
             }
             catch (Exception ex)
             {
+                if (Debugger.IsAttached)
+                    Debugger.Break();
+
                 subject.OnError(ex);
             }
         }
@@ -240,6 +271,7 @@ namespace WagahighChoices
             // 一番右下の色が赤っぽくなかったらムービーだと判断してスキップ処理を入れる
             this._windowService.MouseClick(s_center);
             Thread.Sleep(6000);
+            this.Skip();
 
             using (var bmp = this.Capture())
                 return ComputeHash(bmp);
@@ -254,7 +286,9 @@ namespace WagahighChoices
         private void QuickSave()
         {
             this._windowService.MouseClick(s_quickSavePos);
-            Thread.Sleep(3000);
+            Thread.Sleep(100);
+            this._windowService.CursorMoveOut();
+            Thread.Sleep(4000);
         }
 
         private void QuickLoad()
@@ -267,7 +301,7 @@ namespace WagahighChoices
         private void Skip()
         {
             this._windowService.MouseClick(s_nextChoicePos);
-            Thread.Sleep(500);
+            Thread.Sleep(1000);
             this.ClickYes();
         }
     }

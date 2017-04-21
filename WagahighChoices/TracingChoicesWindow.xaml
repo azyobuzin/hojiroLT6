@@ -26,6 +26,6 @@
             </ItemsControl>
         </ScrollViewer>
 
-        <TextBlock Grid.Row="1" Margin="6" Text="{Binding StatusText}" HorizontalAlignment="Center" />
+        <TextBlock Grid.Row="1" Margin="6" Text="{Binding StatusText}" HorizontalAlignment="Center" TextWrapping="Wrap" />
     </Grid>
 </Window>

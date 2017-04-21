@@ -12,7 +12,7 @@ namespace WagahighChoices
 
         public (IReadOnlyCollection<ChoiceAction> Actions, FoundRoute? FoundRoute) Next(string screenshotHash)
         {
-            if (screenshotHash == this._stack[this._stack.Count - 1].ScreenshotHash)
+            if (this._stack.Count > 0 && screenshotHash == this._stack[this._stack.Count - 1].ScreenshotHash)
                 throw new InvalidOperationException("前回と同じスクリーンショットです。");
 
             var info = MainLogic.GetChoiceWindowInfo(screenshotHash);

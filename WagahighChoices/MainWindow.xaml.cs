@@ -128,7 +128,7 @@ namespace WagahighChoices
                 if (!this.CheckAlreadySaved(hash)) return;
 
                 var bm = new SaveRouteWindowBindingModel(img);
-                var dialogResult = new SaveChoiceWindow { DataContext = bm }
+                var dialogResult = new SaveRouteWindow { DataContext = bm }
                     .ShowDialog();
 
                 if (!dialogResult.GetValueOrDefault()) return;
