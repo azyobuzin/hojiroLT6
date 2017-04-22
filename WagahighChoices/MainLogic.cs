@@ -249,21 +249,11 @@ namespace WagahighChoices
 
         private string GetScreenshotHashSkippingMovie()
         {
-            bool IsPink(Color px) => px.R >= 220 && px.G < 220 && px.B < 220;
-
-            while (true)
+            using (var bmp = this.Capture())
             {
-                using (var bmp = this.Capture())
-                {
-                    // ムービーチェック
-                    if (!IsPink(bmp.GetPixel(ExpectedWidth - 1, ExpectedHeight - 1))) break;
-
-                    // 選択肢が表示されているかチェック
-                    if (IsPink(bmp.GetPixel(960, 220)))
-                        return ComputeHash(bmp);
-
-                    Thread.Sleep(500);
-                }
+                var px = bmp.GetPixel(ExpectedWidth - 1, ExpectedHeight - 1);
+                if (px.R >= 220 && px.G < 220 && px.B < 220)
+                    return ComputeHash(bmp);
             }
 
             // 一番右下の色が赤っぽくなかったらムービーだと判断してスキップ処理を入れる
@@ -278,7 +268,7 @@ namespace WagahighChoices
         private void ClickYes()
         {
             this._windowService.MouseClick(s_yesPos);
-            Thread.Sleep(1500);
+            Thread.Sleep(3500);
         }
 
         private void QuickSave()
