@@ -301,7 +301,7 @@ namespace WagahighChoices
             for (var i = 0; i < x.Length; i++)
             {
                 if (x[i] != y[i]) c++;
-                if (c > 2) return false; // 基準値は2で
+                if (c > 5) return false; // 基準値は2で
             }
 
             return true;

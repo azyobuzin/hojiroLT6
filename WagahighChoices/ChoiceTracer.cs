@@ -21,7 +21,7 @@ namespace WagahighChoices
 
             var info = MainLogic.GetAllChoiceWindowInfo()
                 .Select(x => (x, x.ScreenshotHash.Zip(screenshotHash, (y, z) => y != z).Count(y => y)))
-                .Where(x => x.Item2 <= 2) // ハッシュが2文字差以内
+                .Where(x => x.Item2 <= 5) // ハッシュが5文字差以内
                 .OrderBy(x => x.Item2)
                 .Select(x => x.Item1)
                 .FirstOrDefault();
@@ -57,7 +57,7 @@ namespace WagahighChoices
                 return (Array.Empty<ChoiceAction>(), foundRoute);
             }
 
-            this._stack.Add(new ChoiceStackItem(screenshotHash, 1));
+            this._stack.Add(new ChoiceStackItem(info.ScreenshotHash, 1));
             return (s_select1Actions, null);
         }
 
