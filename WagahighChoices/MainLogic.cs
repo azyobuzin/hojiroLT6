@@ -6,10 +6,10 @@ using System.IO;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Security.Cryptography;
 using System.Threading;
 using Newtonsoft.Json;
 using Realms;
+using Shipwreck.Phash;
 using NativePoint = NetCoreEx.Geometry.Point;
 using WpfMedia = System.Windows.Media;
 
@@ -58,41 +58,16 @@ namespace WagahighChoices
             return this._windowService.Capture();
         }
 
-        private static unsafe string ComputeHash(Bitmap bmp)
+        private static string ComputeHash(Bitmap bmp)
         {
-            char HexChar(uint i) => (char)(
-                i <= 9
-                    ? '0' + i
-                    : 'a' + (i - 10)
-            );
-
-            var data = bmp.LockBits(new Rectangle(0, 0, bmp.Width, bmp.Height), ImageLockMode.ReadOnly, PixelFormat.Format24bppRgb);
-            byte[] bs;
-
-            try
+            using (var ms = new MemoryStream())
             {
-                using (var stream = new UnmanagedMemoryStream((byte*)data.Scan0, 3L * data.Width * data.Height))
-                using (var md5 = MD5.Create())
-                    bs = md5.ComputeHash(stream);
-            }
-            finally
-            {
-                bmp.UnlockBits(data);
-            }
+                bmp.Save(ms, ImageFormat.Png);
+                ms.Position = 0;
 
-            // 16進法に変換
-            var s = new string('\0', bs.Length * 2);
-            fixed (char* p = s)
-            {
-                for (var i = 0; i < bs.Length; i++)
-                {
-                    var b = (uint)bs[i];
-                    p[i * 2] = HexChar(b >> 4);
-                    p[i * 2 + 1] = HexChar(b & 0b1111);
-                }
+                // どうせ中で WPF の Bitmap に変換されるのですごい無駄感ある
+                return ImagePhash.ComputeDigest(ms).ToString();
             }
-
-            return s;
         }
 
         public (WpfMedia.ImageSource Image, string Hash) GetScreenshotAndHash()
@@ -199,6 +174,8 @@ namespace WagahighChoices
                     writer.WriteStartArray();
                     writer.Flush();
 
+                    var stopwatch = Stopwatch.StartNew();
+
                     this.QuickSave();
 
                     var choiceTracer = new ChoiceTracer();
@@ -228,13 +205,20 @@ namespace WagahighChoices
                         {
                             if (cancellationToken.IsCancellationRequested) break;
 
+                            // ムービーチェック
+                            var currentHash = this.GetScreenshotHashSkippingMovie();
+
                             switch (action)
                             {
                                 case ChoiceAction.Select1:
                                 case ChoiceAction.Select2:
                                     this._windowService.MouseClick(
                                         action == ChoiceAction.Select1 ? s_choice1Pos : s_choice2Pos);
-                                    Thread.Sleep(500);
+                                    Thread.Sleep(
+                                        HashEquals(currentHash, "0x9CE16F0082FED687619F967AA3BFA99EBBB3938EB7BB9CA290919C7B92AF918B93A07E9FABB99B9C")
+                                            ? 6000 // 「調理場を手伝う」は待機時間が長い
+                                            : 1700
+                                    );
                                     this.Skip();
                                     break;
                                 case ChoiceAction.GoToStart:
@@ -246,7 +230,11 @@ namespace WagahighChoices
                         }
                     }
 
+                    stopwatch.Stop();
+
                     writer.WriteEndArray();
+                    writer.WritePropertyName("ElapsedTime");
+                    s_serializer.Serialize(writer, stopwatch.Elapsed);
                     writer.WriteEndObject();
                 }
             }
@@ -261,11 +249,21 @@ namespace WagahighChoices
 
         private string GetScreenshotHashSkippingMovie()
         {
-            using (var bmp = this.Capture())
+            bool IsPink(Color px) => px.R >= 220 && px.G < 220 && px.B < 220;
+
+            while (true)
             {
-                var px = bmp.GetPixel(ExpectedWidth - 1, ExpectedHeight - 1);
-                if (px.R >= 220 && px.G < 220 && px.B < 220)
-                    return ComputeHash(bmp);
+                using (var bmp = this.Capture())
+                {
+                    // ムービーチェック
+                    if (!IsPink(bmp.GetPixel(ExpectedWidth - 1, ExpectedHeight - 1))) break;
+
+                    // 選択肢が表示されているかチェック
+                    if (IsPink(bmp.GetPixel(960, 220)))
+                        return ComputeHash(bmp);
+
+                    Thread.Sleep(500);
+                }
             }
 
             // 一番右下の色が赤っぽくなかったらムービーだと判断してスキップ処理を入れる
@@ -280,7 +278,7 @@ namespace WagahighChoices
         private void ClickYes()
         {
             this._windowService.MouseClick(s_yesPos);
-            Thread.Sleep(3000);
+            Thread.Sleep(1500);
         }
 
         private void QuickSave()
@@ -301,8 +299,22 @@ namespace WagahighChoices
         private void Skip()
         {
             this._windowService.MouseClick(s_nextChoicePos);
-            Thread.Sleep(1000);
+            Thread.Sleep(500);
             this.ClickYes();
+        }
+
+        private static bool HashEquals(string x, string y)
+        {
+            if (x.Length != y.Length) return false;
+
+            var c = 0;
+            for (var i = 0; i < x.Length; i++)
+            {
+                if (x[i] != y[i]) c++;
+                if (c > 2) return false; // 基準値は2で
+            }
+
+            return true;
         }
     }
 }
