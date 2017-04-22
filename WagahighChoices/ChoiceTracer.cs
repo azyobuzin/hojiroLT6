@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 
@@ -36,7 +37,7 @@ namespace WagahighChoices
             {
                 var foundRoute = new FoundRoute(
                     info.ScreenshotHash,
-                    this._stack.ToReversedImmutableArray()
+                    this._stack.ToImmutableArray()
                 );
 
                 var nextItem = this.PopStack();
